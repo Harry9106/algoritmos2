@@ -1,0 +1,203 @@
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "map.h"
+#include "string.h"
+
+
+
+struct _node_t
+{
+	string_t key;
+	string_t value;
+	struct _node_t *right;
+	struct _node_t *left;
+};
+
+/*Creates non-empty node
+*/
+map_t create_node(key_t key, value_t value)
+{
+	map_t map=NULL;
+	map=calloc(1,sizeof(struct _node_t));
+	map->key=key;
+	map->value=value;
+	map->left=NULL;
+	map->right=NULL;
+	return map;
+}
+/* Destroys a node */
+map_t destroy_node(map_t node)
+{
+	string_destroy(node->key);
+	string_destroy(node->value);
+	free(node);
+	node=NULL;
+	return node;
+}
+
+/* Creates an empty map.
+ */
+map_t map_empty()
+{
+	return NULL;
+}
+
+map_t min_node(map_t node) 
+{
+  map_t current = node;
+  while (current->left != NULL) 
+    current = current->left;
+  return current;
+}
+
+map_t max_node(map_t node) 
+{
+  map_t current = node;
+  while (current->left != NULL) 
+    current = current->left;
+  return current;
+ }
+
+
+/* Puts the [key] associated with the value [value] in the map.
+ * If [key] is already in the map, its
+ * old value is replaced by [value].
+ */
+map_t map_put(map_t map, key_t key, value_t value)
+{
+	map_t aux=map;
+	if (aux==NULL)
+		map=create_node(key,value);
+	else
+	{
+		if (string_eq(key, aux->key))
+		{
+			string_destroy(aux->key);
+			string_destroy(aux->value);
+			aux->key=key;
+			aux->value=value;
+		}
+		else if (string_less(key, aux->key))
+		{
+			if (aux->left==NULL)
+				aux->left=create_node(key,value);
+			else map_put(aux->left,key,value);
+		}
+		else if (string_less(aux->key,key))
+		{
+			if (aux->right==NULL)
+				aux->right=create_node(key,value);
+			else map_put(aux->right,key,value);
+		}
+	}
+	return map;
+}
+
+/* Returns a reference to the value associated with the given [key]. 
+ * If [key] is not in the map, returns NULL.
+ */
+value_t map_get(map_t map, key_t key)
+{
+	map_t aux=map;
+	string_t res=NULL;
+	if (aux!=NULL)
+	{
+		if (string_eq(key,aux->key))
+			res = aux->value;
+		else
+		{
+			res = map_get(aux->left,key);
+			if (res==NULL) 
+				res= map_get(aux->right,key);
+		}
+	}
+	return res;
+}
+
+/* Returns true if the [key] is in the map, or false otherwise.
+ */
+bool map_contains(map_t map, key_t key)
+{
+	map_t aux=map;
+	if (aux != NULL)
+	{
+		if (string_eq(key,aux->key) || map_contains(aux->left,key) || map_contains(aux->right,key))
+			return true;
+	}
+	return false;
+}
+
+/* Removes the key [key] from the map. If [key] is not in the
+ * map, it does nothing and returns the map unchanged.
+ */
+map_t map_remove(map_t map, key_t key)
+{
+	if (map==NULL)	//CASO ARBOL VACIO
+		return map;
+	
+	else if (string_less(key,map->key))
+		map->left=map_remove(map->left,key);
+	
+	else if (string_eq(key,map->key))
+	{
+		if (map->left==NULL)
+		{
+			map_t aux=map;
+			map=map->right;
+			aux=destroy_node(aux);
+		}
+		else if (map->left!=NULL)
+		{
+			map_t aux=max_node(map);
+			string_destroy(map->key);
+			string_destroy(map->value);
+			map->key=aux->key;
+			map->value=aux->value;
+			aux=destroy_node(aux);
+		}
+	}
+	else if (string_less(map->key,key))
+	{
+		map->right=map_remove(map->right,key);
+	}
+	return map;
+}
+
+
+/* Prints the map in the given [file], showing each key and its definition.
+ * Note: To print the map in the screen, use [map_dump(map, stdout)]. 
+ * See "man stdout"
+ */
+void  map_dump(map_t map, FILE *file)
+{
+	if (map)
+	{
+		map_dump(map->left,file);
+		string_t a = string_create(": ");
+		string_t b = string_create(".\n");
+		string_dump(map->key, file);
+		string_dump(a, file);
+		string_dump(map->value, file);
+		string_dump(b, file);
+		string_destroy(a);
+		string_destroy(b);
+		map_dump(map->right,file);
+	}
+}
+
+/* Destroys the map, by freeing all the allocated resources.
+ */
+map_t map_destroy(map_t map)
+{
+	if (map==NULL)	//CASO ARBOL VACIO
+		return map;
+	else
+	{
+		map_destroy(map->left);
+		map_destroy(map->right);
+		map = destroy_node(map);
+	}
+	return map;
+}
+

@@ -1,0 +1,63 @@
+map_t map_put(map_t map, key_t key, value_t value)
+{
+	if (map_contains(map, key))
+	{
+		map_t aux = map;
+		if (aux==NULL)
+			map=create_node(key,value);
+		else if (aux->next==NULL)
+		{
+			if(string_eq(key,aux->key))
+				aux->value=value;
+			else
+				aux->next=create_node(key,value);
+		}
+		else
+		{ 
+			while(aux!=NULL)
+			{
+				if(string_eq(key,aux->key))
+				{
+					aux->value=value;
+					return map;
+				}
+				if (aux->next==NULL)
+					aux->next = create_node(key,value);
+				aux=aux->next;
+			}
+		}
+		aux = NULL;
+		return map;
+	}
+	else
+	{
+		map_t aux = map;
+		if (aux==NULL)
+			map=create_node(key,value);
+		else if (string_less(key,aux->key))
+		{
+			map=create_node(key,value);
+			map->next=aux;
+		}
+		else
+		{
+			map_t temp_node=NULL;
+			while(aux->next!=NULL)
+			{
+				temp_node=aux->next;
+				if(string_less(key,temp_node->key))
+				{
+					aux->next=create_node(key,value);
+					aux=aux->next;
+					aux->next=temp_node;
+					temp_node=NULL;
+					return map;
+				}
+				aux=aux->next;
+			}
+			aux->next=create_node(key,value);
+		}
+		aux = NULL;
+		return map;
+	}
+}
